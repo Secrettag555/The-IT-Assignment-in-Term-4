@@ -1,0 +1,70 @@
+import time
+from machine import Pin, ADC
+
+pir = Pin(16, Pin.IN, Pin.PULL_DOWN) #Connect PIR motion sensor
+buzzer = Pin(7, Pin.OUT) #Buzzer
+led1 = Pin(2, Pin.OUT) #1st LED
+led2 = Pin(3, Pin.OUT) #2nd LED
+led3 = Pin(4, Pin.OUT) #3rd LED
+led4 = Pin(5, Pin.OUT) #4th LED
+led5 = Pin(6, Pin.OUT) #5th LED
+readyled = Pin(0, Pin.OUT) #LED to light up 
+pot = ADC(Pin(26)) 
+
+leds = [led1, led2, led3, led4, led5] #Groups LED's into an array to easily loop through
+
+activeleds = 0 #Variable for how many LED's should be on
+counting = False #Counting
+count = 0
+
+ready = True #sensor
+
+for led in leds:
+    led.off() #all LEDS are off
+    
+
+def FourFlash(): #Function to make sensor go off and alert user
+    for i in range(4): #Repeats loop 4 times
+        for led in leds: #Turns all LEDs off
+            led.off()
+        buzzer.on() #Activates the buzzer
+        time.sleep(0.07) #Waits a short time while buzzer is on and LEDs are off
+        buzzer.off() #Turns off buzzer
+        time.sleep(0.1) #Waits 0.1 seconds while buzzer and LEDs are off
+        for led in leds: #Turns LEDs on
+            led.on() 
+        time.sleep(0.1) #Waits 0.1 seconds 
+        buzzer.on() #Turns on buzzer
+        time.sleep(0.07) #Keeps buzzer on for 0.07 seconds (
+        buzzer.off() # buzzer off 
+    for led in leds: # LEDs off
+        led.off() 
+
+
+countmax = pot.read_u16() // 2 #Uses the potentiometer to decide how long the sensor should wait between activations
+
+while True: #Continuous loop to check for motion and light up LEDs or go off
+    if pir.value() == 1 and counting == False: #Checks if the motion sensor is triggered and can go off
+        activeleds += 1 #Adds another LED to be active
+        counting = True #Starts counting down so the sensor can't go off until the count reaches the right number
+        ready = False #Makes sensor unable to go off
+    if activeleds >= 1: #Turns on led1 if it should be on
+        led1.on() 
+    if activeleds >= 2: #Turns on led2 if it should be on
+        led2.on()
+    if activeleds >= 3: #Turns on led3 if it should be on
+        led3.on()
+    if activeleds >= 4: #Turns on led4 if it should be on
+        led4.on()
+    if activeleds >= 5: #Activates the flash function if all sensor goes off 5 times
+        FourFlash()
+        activeleds = 0 #Resets activeleds
+    if counting == True: #Runs the count if the sensor is disabled 
+        count += 1
+        readyled.off()
+    if count == countmax: #Resets and turns off counting when the count maximum has been reached
+        count = 0
+        counting = False
+    if counting == False: #Turns on readyled if counting has been finished
+        readyled.on()
+    
